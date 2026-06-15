@@ -1,6 +1,6 @@
 use crate::{pareto::argfront_lexsorted, sort::lexsort};
 
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis, Zip, s};
+use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis, CowArray, Zip, s};
 use num::Float;
 
 /// Computes the inclusive hypervolumes of a set of points in the objective space with respect to a reference point.
@@ -82,10 +82,6 @@ pub fn _wfg<F: Float + 'static>(front: ArrayView2<F>, ref_point: ArrayView1<F>) 
     if front.nrows() == 0 {
         return F::zero();
     }
-    // Check if any point is not finite
-    if front.iter().any(|x| !x.is_finite()) {
-        return F::infinity();
-    }
 
     let inclusive = inclusive_wfg(front, ref_point);
     let mut sum = F::zero();
@@ -97,6 +93,14 @@ pub fn _wfg<F: Float + 'static>(front: ArrayView2<F>, ref_point: ArrayView1<F>) 
         sum = sum.add(excl);
     }
     inclusive[front.nrows() - 1] + sum
+}
+
+fn check_all_finite<F: Float>(front: ArrayView2<F>) -> bool {
+    front.iter().all(|x| x.is_finite())
+}
+
+fn check_all_dominate_ref<F: Float>(front: ArrayView2<F>, ref_point: ArrayView1<F>) -> bool {
+    front.rows().into_iter().all(|r| Zip::from(&r).and(&ref_point).all(|&a, &b| a <= b))
 }
 
 /// Computes the hypervolume indicator of a Pareto set with respect to a reference point using the WFG algorithm.
@@ -135,21 +139,22 @@ pub fn wfg<F: Float + 'static>(
     lexsorted: bool,
     extract_front: bool,
 ) -> F {
-    if extract_front {
-        if !lexsorted {
-            let sorted = lexsort(inputs);
-            let on_front = argfront_lexsorted(sorted.view());
-            _wfg(sorted.select(Axis(0), &on_front).view(), ref_point.view())
-        } else {
-            let on_front = argfront_lexsorted(inputs.view());
-            _wfg(inputs.select(Axis(0), &on_front).view(), ref_point.view())
-        }
+    let front: CowArray<F, _> = if extract_front {
+        let sorted: CowArray<F, _> = if !lexsorted { lexsort(inputs).into() } else { inputs.into() };
+        let on_front = argfront_lexsorted(sorted.view());
+        sorted.select(Axis(0), &on_front).into()
     } else if !lexsorted {
-        let sorted = lexsort(inputs);
-        _wfg(sorted.view(), ref_point.view())
+        lexsort(inputs).into()
     } else {
-        _wfg(inputs.view(), ref_point.view())
+        inputs.into()
+    };
+    if !check_all_finite(front.view()){
+        return F::infinity();
     }
+    if !check_all_dominate_ref(front.view(), ref_point) {
+        panic!("The reference point dominates at least one point in the Pareto set.");
+    }
+    _wfg(front.view(), ref_point)
 }
 
 /// Computes the reference point of a set for the hypervolume indicator.
@@ -211,6 +216,62 @@ mod tests {
 
         let hv = wfg(points.view(), ref_point.view(), true, false);
         assert_eq!(hv, 7.0, "WFG hypervolume is wrong.");
+    }
+
+    #[test]
+    fn test_wfg_hypervolume_contain_nan() {
+        let points = array![
+            [1.0, 4.0, 4.0],
+            [2.0, 2.0, f64::NAN],
+            [3.0, 1.5, 2.0],
+            [4.0, 1.0, 1.0],
+        ];
+        let ref_point = reference_point(points.view());
+
+        let hv = wfg(points.view(), ref_point.view(), true, false);
+        assert_eq!(hv, f64::INFINITY, "WFG hypervolume is wrong.");
+    }
+
+    #[test]
+    fn test_wfg_hypervolume_contain_infinity() {
+        let points = array![
+            [1.0, 4.0, 4.0],
+            [2.0, 2.0, f64::INFINITY],
+            [3.0, 1.5, 2.0],
+            [4.0, 1.0, 1.0],
+        ];
+        let ref_point = reference_point(points.view());
+
+        let hv = wfg(points.view(), ref_point.view(), true, false);
+        assert_eq!(hv, f64::INFINITY, "WFG hypervolume is wrong.");
+    }
+
+    #[test]
+    fn test_wfg_hypervolume_contain_neginfinity() {
+        let points = array![
+            [1.0, 4.0, 4.0],
+            [2.0, 2.0, f64::NEG_INFINITY],
+            [3.0, 1.5, 2.0],
+            [4.0, 1.0, 1.0],
+        ];
+        let ref_point = reference_point(points.view());
+
+        let hv = wfg(points.view(), ref_point.view(), true, false);
+        assert_eq!(hv, f64::INFINITY, "WFG hypervolume is wrong.");
+    }
+
+    #[test]
+    #[should_panic(expected = "The reference point dominates at least one point in the Pareto set.")]
+    fn test_wfg_hypervolume_ref_point_dominates() {
+        let points = array![
+            [1.0, 4.0, 4.0],
+            [2.0, 2.0, 3.0],
+            [3.0, 1.5, 2.0],
+            [4.0, 1.0, 1.0],
+        ];
+        let ref_point =array![0.5, 0.5, 5.0];
+
+        let _ = wfg(points.view(), ref_point.view(), true, false);
     }
 
     #[test]
