@@ -2,7 +2,6 @@ use crate::{pareto::argfront_lexsorted, sort::lexsort};
 
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis, Zip, s};
 use num::Float;
-use std::{fmt::Debug, ops::Sub};
 
 /// Computes the inclusive hypervolumes of a set of points in the objective space with respect to a reference point.
 ///
@@ -18,7 +17,7 @@ pub fn inclusive_wfg<F: Float + 'static>(
     set: ArrayView2<F>,
     ref_point: ArrayView1<F>,
 ) -> Array1<F> {
-    ref_point.sub(&set).product_axis(Axis(1))
+    (&ref_point - &set).product_axis(Axis(1))
 }
 
 /// Computes the exclusive hypervolume of a point p of a given inclusive hypervolume with respect to a Pareto set and reference point.
@@ -83,7 +82,8 @@ pub fn _wfg<F: Float + 'static>(front: ArrayView2<F>, ref_point: ArrayView1<F>) 
     if front.nrows() == 0 {
         return F::zero();
     }
-    if !front.is_all_infinite() {
+    // Check if any point is not finite
+    if front.iter().any(|x| !x.is_finite()) {
         return F::infinity();
     }
 
@@ -110,8 +110,11 @@ pub fn _wfg<F: Float + 'static>(front: ArrayView2<F>, ref_point: ArrayView1<F>) 
 /// * `extract_front` - A boolean flag indicating whether to extract the Pareto front before computing the hypervolume.
 ///
 /// # Example
-/// 
+///
 /// ```
+/// use ndarray::array;
+/// use wfg_rs::*;
+///
 /// // 4 points and 3 objectives
 /// let points = array![
 ///     [1.0, 4.0, 4.0],
@@ -121,12 +124,12 @@ pub fn _wfg<F: Float + 'static>(front: ArrayView2<F>, ref_point: ArrayView1<F>) 
 /// ];
 /// let ref_point = reference_point(points.view());
 /// assert_eq!(ref_point, array![4.0, 4.0, 4.0]);
-/// 
+///
 /// // point, reference, assume lexicographically sorted, extract Pareto set from inputs
 /// let hv = wfg::<f64>(points.view(), ref_point.view(), true, false);
 /// assert_eq!(hv, 7.0);
 /// ```
-pub fn wfg<F: Float + Debug + 'static>(
+pub fn wfg<F: Float + 'static>(
     inputs: ArrayView2<F>,
     ref_point: ArrayView1<F>,
     lexsorted: bool,
@@ -163,9 +166,8 @@ pub fn reference_point<F: Float + 'static>(set: ArrayView2<F>) -> Array1<F> {
 
 #[cfg(test)]
 mod tests {
-    use ndarray::array;
-
     use crate::wfg::{inclusive_wfg, reference_point, wfg};
+    use ndarray::array;
 
     #[test]
     fn test_ref_point() {
@@ -842,6 +844,9 @@ mod tests {
         );
 
         let hv = wfg(points.view(), ref_point.view(), false, true);
-        assert!((hv - 0.5883493015142789_f64).abs() < f64::EPSILON, "WFG hypervolume is wrong.");
+        assert!(
+            (hv - 0.5883493015142789_f64).abs() < f64::EPSILON,
+            "WFG hypervolume is wrong."
+        );
     }
 }

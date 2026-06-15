@@ -1,6 +1,6 @@
 use ndarray::{Array2, ArrayView2, Axis};
 use num::Float;
-use std::cmp::Ordering;
+use core::cmp::Ordering;
 
 /// Lexicographically sorts the input objects in ascending order of their objectives.
 ///
@@ -19,24 +19,27 @@ pub fn lexsort<F: Float>(input: ArrayView2<F>) -> Array2<F> {
 
     let mut indices: Vec<usize> = (0..nrows).collect();
     indices.sort_by(|&a, &b| {
-        let mut ord = input[[a, 0]].partial_cmp(&input[[b, 0]]).unwrap();
-        let mut i = 0;
-        while let Ordering::Equal = ord
-            && i < ncols
-        {
-            ord = input[[a, i]].partial_cmp(&input[[b, i]]).unwrap();
-            i += 1;
+        for i in 0..ncols {
+            let x = input[[a, i]];
+            let y = input[[b, i]];
+            if x < y {
+                return Ordering::Less;
+            }
+            if x > y {
+                return Ordering::Greater;
+            }
         }
-        ord
+        Ordering::Equal
     });
     input.select(Axis(0), &indices)
 }
 
 #[cfg(test)]
 mod tests {
+    use ndarray::array;
+
     #[test]
     fn test_lexsort() {
-        use ndarray::array;
         let points = array![
             [3.0, 3.0, 2.0],
             [1.0, 4.0, 4.0],
