@@ -15,6 +15,9 @@ The function `wfg` takes
 ## Example
 
 ```rust
+use ndarray::array;
+use wfg_rs::*;
+
 // 4 points and 3 objectives
 let points = array![
     [1.0, 4.0, 4.0],
