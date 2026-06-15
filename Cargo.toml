@@ -1,0 +1,8 @@
+[package]
+name = "wfg_rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ndarray = "0.17.2"
+num = "0.4.3"
