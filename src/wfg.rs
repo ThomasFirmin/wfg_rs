@@ -110,8 +110,21 @@ pub fn _wfg<F: Float + 'static>(front: ArrayView2<F>, ref_point: ArrayView1<F>) 
 /// * `extract_front` - A boolean flag indicating whether to extract the Pareto front before computing the hypervolume.
 ///
 /// # Example
+/// 
 /// ```
-///
+/// // 4 points and 3 objectives
+/// let points = array![
+///     [1.0, 4.0, 4.0],
+///     [2.0, 2.0, 3.0],
+///     [3.0, 1.5, 2.0],
+///     [4.0, 1.0, 1.0],
+/// ];
+/// let ref_point = reference_point(points.view());
+/// assert_eq!(ref_point, array![4.0, 4.0, 4.0]);
+/// 
+/// // point, reference, assume lexicographically sorted, extract Pareto set from inputs
+/// let hv = wfg::<f64>(points.view(), ref_point.view(), true, false);
+/// assert_eq!(hv, 7.0);
 /// ```
 pub fn wfg<F: Float + Debug + 'static>(
     inputs: ArrayView2<F>,
