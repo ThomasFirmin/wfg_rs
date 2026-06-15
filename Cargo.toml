@@ -1,7 +1,14 @@
 [package]
-name = "wfg_rs"
-version = "0.1.0"
+authors = ["Thomas Firmin"]
+version = "1.0.0"
 edition = "2024"
+license = "CECILL-C"
+readme = "README.md"
+rust-version = "1.91.1"
+repository = "https://github.com/ThomasFirmin/wfg_rs"
+documentation = "https://docs.rs/wfg_rs/latest/wfg_rs/"
+description  = "A Rust-ndarray implementation of the WFG hypervolume algorithm for multi-objective optimization."
+keywords     = ["multi-objective", "optimization", "hypervolume", "wfg", "pareto", "ndarray"]
 
 [dependencies]
 ndarray = "0.17.2"
