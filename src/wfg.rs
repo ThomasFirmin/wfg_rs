@@ -114,6 +114,15 @@ pub(crate) fn check_all_dominate_ref<F: Float>(front: ArrayView2<F>, ref_point: 
 /// * `lexsorted` - A boolean flag indicating whether the input Pareto set is already lexicographically sorted.
 /// * `extract_front` - A boolean flag indicating whether to extract the Pareto front before computing the hypervolume.
 ///
+/// # Returns
+/// A [`Float`] value representing the hypervolume indicator of the input Pareto set.
+/// 
+/// # Panics
+/// 
+/// * If the number of objectives is less than 2.
+/// * If the number of objectives in the input set and reference point do not match.
+/// * If the reference point dominates at least one point in the Pareto set.
+/// 
 /// # Example
 ///
 /// ```
@@ -140,6 +149,12 @@ pub fn wfg<F: Float + 'static>(
     lexsorted: bool,
     extract_front: bool,
 ) -> F {
+    if inputs.ncols() < 2 {
+        panic!("The number of objectives must be at least 2.");
+    }
+    if inputs.ncols() != ref_point.len() {
+        panic!("The number of objectives in the input set and reference point must match.");
+    }
     let front: CowArray<F, _> = if extract_front {
         let sorted: CowArray<F, _> = if !lexsorted { lexsort(inputs).into() } else { inputs.into() };
         let on_front = argfront_lexsorted(sorted.view());
