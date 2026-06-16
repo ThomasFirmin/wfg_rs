@@ -38,8 +38,8 @@ assert_eq!(hv, 7.0);
 The implementation of the WFG algorithm is adapted from [A Fast Way of Calculating Exact Hypervolumes](https://ieeexplore.ieee.org/document/5766730).
 
 ## Dependencies
-- [ndarray](https://crates.io/crates/ndarray): 0.17.2
-- [num](https://docs.rs/num/latest/num/): 0.4.3
+- [ndarray](https://crates.io/crates/ndarray): `version = "0.17.2", default-features = false`
+- [num](https://docs.rs/num/latest/num/): `version = "0.4.3", default-features = false, features = ["libm"] `
 
 ## License
 
