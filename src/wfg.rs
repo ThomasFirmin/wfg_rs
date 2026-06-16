@@ -95,11 +95,12 @@ pub fn _wfg<F: Float + 'static>(front: ArrayView2<F>, ref_point: ArrayView1<F>) 
     inclusive[front.nrows() - 1] + sum
 }
 
-fn check_all_finite<F: Float>(front: ArrayView2<F>) -> bool {
+/// Checks if all values in the input array are finite (not NaN or infinity).
+pub(crate) fn check_all_finite<F: Float>(front: ArrayView2<F>) -> bool {
     front.iter().all(|x| x.is_finite())
 }
-
-fn check_all_dominate_ref<F: Float>(front: ArrayView2<F>, ref_point: ArrayView1<F>) -> bool {
+/// Checks if all points in the input Pareto set dominate the reference point.
+pub(crate) fn check_all_dominate_ref<F: Float>(front: ArrayView2<F>, ref_point: ArrayView1<F>) -> bool {
     front.rows().into_iter().all(|r| Zip::from(&r).and(&ref_point).all(|&a, &b| a <= b))
 }
 
