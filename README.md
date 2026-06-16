@@ -4,6 +4,8 @@ A Rust [ndarray](https://crates.io/crates/ndarray)-based implementation of the W
 
 _We consider the minimization of each objectives._
 
+Documentation [here](https://docs.rs/wfg_rs/latest/wfg_rs/).
+
 ## Main function
 
 The function `wfg` takes
