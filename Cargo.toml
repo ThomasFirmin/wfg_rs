@@ -1,7 +1,7 @@
 [package]
 authors = ["Thomas Firmin"]
 name = "wfg_rs"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 license = "CECILL-C"
 readme = "README.md"
